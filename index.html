@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Terminal Hacker</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #terminal {
+      height: 100%;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 1rem;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .cursor::after {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 1em;
+      background-color: #00ff00;
+      margin-left: 2px;
+      animation: blink 0.8s steps(1) infinite;
+    }
+
+    .error { color: #ff3333; }
+    .warning { color: #ffff66; }
+    .info { color: #00ffff; }
+    .command { color: #00bfff; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
+    /* Efecto Matrix al final */
+    #matrixCanvas {
+      display: none;
+      position: absolute;
+      top:0; left:0;
+      width:100%; height:100%;
+      background:black;
+      z-index: 999;
+    }
+
+    /* Mensaje final */
+    #finalMessage {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: red;
+      font-size: 8vw;
+      font-weight: bold;
+      text-shadow: 0 0 20px red, 0 0 40px darkred;
+      animation: flash 1s infinite;
+      z-index: 1000;
+      padding: 20px;
+      width: 90%;
+      word-wrap: break-word;
+    }
+
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+
+    @media (max-width: 600px) {
+      #finalMessage {
+        font-size: 12vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="terminal"></div>
+  <canvas id="matrixCanvas"></canvas>
+  <div id="finalMessage">⚠️ DISPOSITIVO HACKEADO ⚠️</div>
+
+  <script>
+    const terminal = document.getElementById("terminal");
+    const finalMessage = document.getElementById("finalMessage");
+
+    function randomIP() {
+      return Array.from({length:4}, () => Math.floor(Math.random()*256)).join(".");
+    }
+    function randomHash(len=32) {
+      const chars = "abcdef0123456789";
+      return Array.from({length: len}, () => chars[Math.floor(Math.random()*chars.length)]).join("");
+    }
+
+    const lines = [
+      {text: "Ejecutando escaneo de red (nmap -A " + randomIP() + ")", class: "command"},
+      {text: "Puertos detectados:", class: "info"},
+      {text: "80/tcp   open   http     Apache/2.4.54", class: ""},
+      {text: "443/tcp  open   https    OpenSSL 1.1.1", class: ""},
+      {text: "3306/tcp open   mysql    MySQL 8.0.29", class: ""},
+      {text: "Intentando conexión SSH...", class: "info"},
+      {text: "[!] Fuerza bruta en curso contra root...", class: "warning"},
+      {text: "[✔] Contraseña encontrada → root@" + new Date().getFullYear(), class: "error"},
+      {text: "Estableciendo túnel seguro (ssh root@" + randomIP() + ")", class: "command"},
+      {text: "Acceso concedido ✔", class: "info"},
+      {text: "cat /etc/passwd → usuarios del sistema", class: "command"},
+      {text: "root:x:0:0:root:/root:/bin/bash", class: ""},
+      {text: "admin:x:1000:1000:Admin:/home/admin:/bin/bash", class: ""},
+      {text: "grep -r 'password' /var/www/", class: "command"},
+      {text: "Encontradas credenciales → hash MD5: " + randomHash(32), class: "error"},
+      {text: "scp root@" + randomIP() + ":/var/lib/mysql/db.sqlite ./", class: "command"},
+      {text: "Transferencia completada (92.3 MB)", class: ""},
+      {text: "Extrayendo mensajes confidenciales...", class: "info"},
+      {text: "✔ 874 mensajes interceptados", class: ""},
+      {text: "openssl enc -d -aes-256-cbc -in secret.enc -out secreto.txt", class: "command"},
+      {text: "Archivo descifrado correctamente ✔", class: "info"},
+      {text: "Eliminando huellas (rm -rf /var/log/*)", class: "command"},
+      {text: "Logs eliminados ✔", class: "warning"},
+      {text: ">>> Operación finalizada. Cerrando conexión segura.", class: ""}
+    ];
+
+    let lineIndex = 0;
+
+    function escribirLinea(line) {
+      return new Promise(resolve => {
+        const div = document.createElement("div");
+        if (line.class) div.classList.add(line.class);
+        terminal.appendChild(div);
+
+        let i = 0;
+        function typeChar() {
+          if (i < line.text.length) {
+            if (Math.random() < 0.01) {
+              div.textContent += String.fromCharCode(97 + Math.floor(Math.random()*26));
+              setTimeout(() => {
+                div.textContent = div.textContent.slice(0, -1);
+                typeChar();
+              }, 100);
+              return;
+            }
+            div.textContent += line.text.charAt(i);
+            i++;
+            terminal.scrollTop = terminal.scrollHeight;
+            setTimeout(typeChar, 20 + Math.random() * 40);
+          } else {
+            resolve();
+          }
+        }
+        typeChar();
+      });
+    }
+
+    async function ejecutarTerminal() {
+      for (const line of lines) {
+        await escribirLinea(line);
+        await new Promise(r => setTimeout(r, 300 + Math.random() * 700));
+      }
+
+      for (let j = 0; j < 30; j++) {
+        const randomHex = Array.from({length: 32}, () =>
+          Math.floor(Math.random() * 16).toString(16)
+        ).join(" ");
+        const div = document.createElement("div");
+        div.textContent = randomHex;
+        div.classList.add("info");
+        terminal.appendChild(div);
+        terminal.scrollTop = terminal.scrollHeight;
+        await new Promise(r => setTimeout(r, 50));
+      }
+
+      setTimeout(matrixEffect, 1000);
+    }
+
+    ejecutarTerminal();
+
+    function matrixEffect() {
+      document.getElementById("terminal").style.display = "none";
+      const canvas = document.getElementById("matrixCanvas");
+      canvas.style.display = "block";
+      const ctx = canvas.getContext("2d");
+
+      canvas.height = window.innerHeight;
+      canvas.width = window.innerWidth;
+
+      const letters = "アァイィウヴエェオカガキギクグケゲコゴサザシジスセゼソタダチッヂツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモヤユヨラリルレロワヰヱヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      const lettersArr = letters.split("");
+
+      const fontSize = 16;
+      const columns = canvas.width / fontSize;
+      const drops = [];
+
+      for (let x = 0; x < columns; x++) drops[x] = 1;
+
+      function draw() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#0F0";
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+          const text = lettersArr[Math.floor(Math.random() * lettersArr.length)];
+          ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+          if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+          drops[i]++;
+        }
+      }
+
+      setInterval(draw, 33);
+
+      // Después de 6 segundos mostrar mensaje final
+      setTimeout(() => {
+        canvas.style.display = "none";
+        finalMessage.style.display = "block";
+      }, 6000);
+    }
+  </script>
+</body>
+</html>
